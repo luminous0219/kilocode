@@ -145,12 +145,21 @@ const live: Layer.Layer<
             sessionID: input.sessionID,
             providerOptions: item.options,
           })
-      const options: Record<string, any> = pipe(
+      let options: Record<string, any> = pipe(
         base,
         mergeDeep(input.model.options),
         mergeDeep(input.agent.options),
         mergeDeep(variant),
       )
+      // kilocode_change start — DeepSeek rejects thinking disabled together with reasoning_effort (merge order / custom variants can leave effort set).
+      if (
+        input.model.api.npm === "@ai-sdk/openai-compatible" &&
+        input.model.api.id.toLowerCase().includes("deepseek-v4") &&
+        options.thinking?.type === "disabled"
+      ) {
+        options = mergeDeep(options, { reasoningEffort: undefined })
+      }
+      // kilocode_change end
       if (isOpenaiOauth) {
         // kilocode_change start - prepend soul to instructions
         options.instructions = SystemPrompt.soul() + "\n" + system.join("\n")

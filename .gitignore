@@ -16,6 +16,7 @@ node_modules
 # use vscode workspaces with peacock to have many vscodes with the same repo:
 *.code-workspace
 .codex
+.specstory
 *~
 playground
 tmp
@@ -45,7 +46,8 @@ telemetry-id
 tsconfig.tsbuildinfo
 
 # Kilo
-.kilo/plans/*upstream-merge-report-*.md
+.kilo/
+docs/
 
 # Test Artifacts
 packages/app/.artifacts/

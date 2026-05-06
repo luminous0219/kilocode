@@ -478,6 +478,27 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
   )
     return {}
 
+  // DeepSeek V4 supports thinking toggle (enabled/disabled) and reasoning_effort (high/max).
+  // Low/medium are mapped to high by the API, so we only offer instant (no thinking) and thinking (thinking + high).
+  // kilocode_change start
+  if (id.includes("deepseek-v4")) {
+    if (model.api.npm === "@openrouter/ai-sdk-provider" || model.api.npm === "@kilocode/kilo-gateway") {
+      return {
+        instant: { reasoning: { enabled: false } },
+        thinking: { reasoning: { enabled: true, effort: "high" } },
+      }
+    }
+    if (model.api.npm === "@ai-sdk/openai-compatible") {
+      return {
+        // reasoningEffort: undefined drops base default from options() merge (API forbids disabled thinking + effort).
+        instant: { thinking: { type: "disabled" }, reasoningEffort: undefined },
+        thinking: { thinking: { type: "enabled" }, reasoningEffort: "high" },
+      }
+    }
+    return {}
+  }
+  // kilocode_change end
+
   // see: https://docs.x.ai/docs/guides/reasoning#control-how-hard-the-model-thinks
   if (id.includes("grok") && id.includes("grok-3-mini")) {
     if (model.api.npm === "@openrouter/ai-sdk-provider" || model.api.npm === "@kilocode/kilo-gateway") {
@@ -610,11 +631,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "venice-ai-sdk-provider":
     // https://docs.venice.ai/overview/guides/reasoning-models#reasoning-effort
     case "@ai-sdk/openai-compatible":
-      const efforts = [...WIDELY_SUPPORTED_EFFORTS]
-      if (model.api.id.toLowerCase().includes("deepseek-v4")) {
-        efforts.push("max")
-      }
-      return Object.fromEntries(efforts.map((effort) => [effort, { reasoningEffort: effort }]))
+      return Object.fromEntries(WIDELY_SUPPORTED_EFFORTS.map((effort) => [effort, { reasoningEffort: effort }]))
 
     case "@ai-sdk/azure":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/azure
@@ -942,6 +959,19 @@ export function options(input: {
       clear_thinking: false,
     }
   }
+
+  // Enable thinking by default for deepseek-v4 models with openai-compatible SDK
+  // kilocode_change start
+  if (
+    input.model.api.id.toLowerCase().includes("deepseek-v4") &&
+    input.model.api.npm === "@ai-sdk/openai-compatible"
+  ) {
+    result["thinking"] ??= { type: "enabled" }
+    if (result["thinking"]?.type !== "disabled") {
+      result["reasoningEffort"] = "high"
+    }
+  }
+  // kilocode_change end
 
   if (input.model.providerID === "openai" || input.providerOptions?.setCacheKey) {
     result["promptCacheKey"] = input.sessionID

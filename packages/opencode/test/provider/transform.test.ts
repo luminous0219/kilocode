@@ -2229,6 +2229,38 @@ describe("ProviderTransform.variants", () => {
     expect(result).toEqual({})
   })
 
+  test("deepseek-v4 returns instant/thinking variants", () => {
+    const model = createMockModel({
+      id: "deepseek/deepseek-v4-pro",
+      providerID: "deepseek",
+      api: {
+        id: "deepseek-v4-pro",
+        url: "https://api.deepseek.com",
+        npm: "@ai-sdk/openai-compatible",
+      },
+    })
+    const result = ProviderTransform.variants(model)
+    expect(Object.keys(result)).toEqual(["instant", "thinking"])
+    expect(result.instant).toEqual({ thinking: { type: "disabled" }, reasoningEffort: undefined })
+    expect(result.thinking).toEqual({ thinking: { type: "enabled" }, reasoningEffort: "high" })
+  })
+
+  test("deepseek-v4 returns instant/thinking variants via openrouter", () => {
+    const model = createMockModel({
+      id: "deepseek/deepseek-v4-pro",
+      providerID: "openrouter",
+      api: {
+        id: "deepseek/deepseek-v4-pro",
+        url: "https://openrouter.ai/api/v1",
+        npm: "@openrouter/ai-sdk-provider",
+      },
+    })
+    const result = ProviderTransform.variants(model)
+    expect(Object.keys(result)).toEqual(["instant", "thinking"])
+    expect(result.instant).toEqual({ reasoning: { enabled: false } })
+    expect(result.thinking).toEqual({ reasoning: { enabled: true, effort: "high" } })
+  })
+
   test("minimax returns empty object", () => {
     const model = createMockModel({
       id: "minimax/minimax-model",
